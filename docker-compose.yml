@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: harbour-postgres
+    environment:
+      POSTGRES_DB: harbour
+      POSTGRES_USER: harbour
+      POSTGRES_PASSWORD: harbour
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - harbour-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harbour -d harbour"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  harbour-postgres-data:
