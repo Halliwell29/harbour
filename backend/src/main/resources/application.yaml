@@ -13,3 +13,7 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+harbour:
+  open-meteo:
+    weather-url: https://api.open-meteo.com
