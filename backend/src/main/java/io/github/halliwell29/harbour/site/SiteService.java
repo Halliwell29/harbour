@@ -12,6 +12,10 @@ public class SiteService {
         this.siteRepository = siteRepository;
     }
 
+    public Site findById(Long id){
+        return siteRepository.findById(id).orElseThrow();
+    }
+
     public List<Site> findAll(){
         return siteRepository.findAll();
     }
