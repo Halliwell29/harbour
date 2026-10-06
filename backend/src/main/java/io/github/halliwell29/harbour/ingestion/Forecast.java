@@ -1,6 +1,7 @@
 package io.github.halliwell29.harbour.ingestion;
 
 import io.github.halliwell29.harbour.site.Site;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -25,10 +26,12 @@ public class Forecast {
     private String provider;
     private Instant forecastTime;
     private Instant fetchedAt;
+    @Column(name = "temperature_c")
     private Double temperatureC;
     private Double precipitationMm;
     private Double windSpeedKmh;
     private Double windGustKmh;
+    @Column(name = "wave_height_m")
     private Double waveHeightM;
 
     public Forecast(Site site, Instant forecastTime, String provider,
