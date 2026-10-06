@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 public class OpenMeteoNormalizer {
 
-    private static final String PROVIDER = "open-meteo";
+    public static final String PROVIDER = "open-meteo";
 
     public List<Forecast> toForecasts(Site site, OpenMeteoWeatherResponse response){
 

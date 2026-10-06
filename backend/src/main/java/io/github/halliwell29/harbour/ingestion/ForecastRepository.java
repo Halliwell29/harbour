@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ForecastRepository extends JpaRepository<Forecast, Long> {
     List<Forecast> findBySiteIdAndForecastTimeGreaterThanEqualOrderByForecastTimeAsc(Long siteId, Instant from);
+    void deleteBySiteIdAndProvider(Long siteId, String provider);
 }

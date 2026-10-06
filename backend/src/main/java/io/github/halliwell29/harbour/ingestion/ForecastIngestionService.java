@@ -23,6 +23,8 @@ public class ForecastIngestionService {
     public int ingest(Site site){
         OpenMeteoWeatherResponse response = openMeteoClient.fetchWeather(site.getLatitude(), site.getLongitude());
         List<Forecast> forecasts = openMeteoNormalizer.toForecasts(site, response);
+        forecastRepository.deleteBySiteIdAndProvider(site.getId(), OpenMeteoNormalizer.PROVIDER);
+        forecastRepository.flush();
         forecasts = forecastRepository.saveAll(forecasts);
         return forecasts.size();
     }
