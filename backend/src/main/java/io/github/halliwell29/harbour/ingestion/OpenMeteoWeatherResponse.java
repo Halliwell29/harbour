@@ -14,5 +14,6 @@ public record OpenMeteoWeatherResponse(double latitude, double longitude, Hourly
             @JsonProperty("wind_speed_10m")
             List<Double> windSpeedKmh,
             @JsonProperty("wind_gusts_10m")
-            List<Double> windGustKmh) { }
+            List<Double> windGustKmh
+    ) { }
 }

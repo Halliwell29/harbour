@@ -6,10 +6,15 @@ import java.util.List;
 
 @Service
 public class SiteService {
+
     private final SiteRepository siteRepository;
 
     public SiteService(SiteRepository siteRepository){
         this.siteRepository = siteRepository;
+    }
+
+    public Site findById(Long id){
+        return siteRepository.findById(id).orElseThrow();
     }
 
     public List<Site> findAll(){

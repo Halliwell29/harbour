@@ -17,3 +17,8 @@ logging:
 harbour:
   open-meteo:
     weather-url: https://api.open-meteo.com
+  limits:
+    max-gust-kmh: 40
+    max-wave-height-m: 1.5
+    max-wind-kmh: 30
+    min-temperature-c: -15

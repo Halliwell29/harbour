@@ -9,6 +9,7 @@ import java.time.Duration;
 
 @Component
 public class OpenMeteoClient {
+
     private static final String HOURLY_FIELDS = "temperature_2m,precipitation,wind_speed_10m,wind_gusts_10m";
     private final RestClient restClient;
 
