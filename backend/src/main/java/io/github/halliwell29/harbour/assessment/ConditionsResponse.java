@@ -12,6 +12,7 @@ import java.util.List;
  */
 public record ConditionsResponse(
         SiteResponse site,
+        OperatingLimits limits,
         OperatingStatus status,
         HourCondition current,
         List<HourCondition> hours,

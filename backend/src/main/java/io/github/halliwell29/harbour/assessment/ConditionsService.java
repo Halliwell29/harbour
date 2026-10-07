@@ -18,13 +18,16 @@ public class ConditionsService {
 
     private static final int HOURS_AHEAD = 24;
 
+    private final OperatingLimits operatingLimits;
     private final SiteService siteService;
     private final ForecastRepository forecastRepository;
     private final AssessmentService assessmentService;
 
-    public ConditionsService(SiteService siteService,
+    public ConditionsService(OperatingLimits operatingLimits,
+                             SiteService siteService,
                              ForecastRepository forecastRepository,
                              AssessmentService assessmentService) {
+        this.operatingLimits = operatingLimits;
         this.siteService = siteService;
         this.forecastRepository = forecastRepository;
         this.assessmentService = assessmentService;
@@ -54,6 +57,7 @@ public class ConditionsService {
 
         return new ConditionsResponse(
                 SiteResponse.from(site),
+                operatingLimits,
                 worstStatus,
                 current,
                 hours,
