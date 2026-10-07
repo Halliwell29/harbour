@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbour — marine operations dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface:        #fcfcfb;
+    --ink:            #0b0b0b;
+    --ink-2:          #52514e;
+    --muted:          #898781;
+    --grid:           #e1e0d9;
+    --border:         #e6e5de;
+    --good:           #0ca30c;
+    --warning:        #fab219;
+    --critical:       #d03b3b;
+    --good-bg:        #eaf7ea;
+    --warning-bg:     #fef5e2;
+    --critical-bg:    #fbecec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --ink:         #ffffff;
+      --ink-2:       #c3c2b7;
+      --muted:       #898781;
+      --grid:        #2c2c2a;
+      --border:      #2c2c2a;
+      --good-bg:     #10240f;
+      --warning-bg:  #2b2208;
+      --critical-bg: #2c1212;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding-block: 28px 48px;
+    padding-inline: 20px;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  h1 span { color: var(--muted); font-weight: 400; margin-left: 10px; font-size: 13px; }
+
+  button {
+    font: inherit; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 13px; cursor: pointer;
+  }
+  button:hover { color: var(--ink); border-color: var(--muted); }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+  .sites { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+  }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .grow { flex: 1 1 320px; min-width: 0; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 650; letter-spacing: 0.04em; font-size: 13px;
+    padding: 7px 13px; border-radius: 999px; border: 1px solid;
+  }
+  .badge .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .s-GOOD    { color: var(--good);     background: var(--good-bg);     border-color: var(--good); }
+  .s-CAUTION { color: #8a5d00;         background: var(--warning-bg);  border-color: var(--warning); }
+  .s-UNSAFE  { color: var(--critical); background: var(--critical-bg); border-color: var(--critical); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .s-CAUTION { color: var(--warning); } }
+  .s-GOOD .dot    { background: var(--good); }
+  .s-CAUTION .dot { background: var(--warning); }
+  .s-UNSAFE .dot  { background: var(--critical); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(126px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .tile { background: var(--surface); padding: 13px 15px; }
+  .tile .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .tile .value { font-size: 24px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; margin-top: 3px; }
+  .tile .unit { font-size: 13px; color: var(--ink-2); margin-left: 2px; }
+  .tile .limit { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  .reasons { margin: 0; padding-left: 18px; color: var(--ink-2); }
+  .reasons li { margin-bottom: 4px; }
+  .window { font-size: 17px; }
+  .window strong { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; color: var(--ink-2); font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .chart-scroll { overflow-x: auto; }
+  svg { display: block; }
+  svg text { font-size: 11px; fill: var(--muted); }
+  .bar:hover { opacity: 0.82; }
+
+  #tooltip {
+    position: fixed; pointer-events: none; opacity: 0; transition: opacity 90ms;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 11px; font-size: 12px; max-width: 250px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.13); z-index: 10;
+  }
+  #tooltip b { font-variant-numeric: tabular-nums; }
+
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 5px 9px; border-bottom: 1px solid var(--grid); font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  details summary { cursor: pointer; color: var(--ink-2); font-size: 12px; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 22px; }
+  footer code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Harbour<span>marine operations intelligence</span></h1>
+    <button id="refresh">Refresh forecast</button>
+  </header>
+
+  <div class="sites" id="sites"></div>
+  <div id="content"></div>
+
+  <footer>
+    Live hourly forecasts from Open-Meteo, normalized and stored in PostgreSQL, assessed against
+    configured operating limits. Times shown in Atlantic time. Refresh calls
+    <code>POST /api/sites/{id}/ingest</code>.
+  </footer>
+</div>
+<div id="tooltip" role="status"></div>
+
+<script>
+const STATUS_COLOR = { GOOD: 'var(--good)', CAUTION: 'var(--warning)', UNSAFE: 'var(--critical)' };
+const fmtHour = new Intl.DateTimeFormat('en-CA', { hour: 'numeric', hour12: true, timeZone: 'America/Halifax' });
+const fmtFull = new Intl.DateTimeFormat('en-CA', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Halifax' });
+
+let sites = [];
+let selectedId = null;
+
+const el = (id) => document.getElementById(id);
+const num = (v, digits = 1) => (v === null || v === undefined ? null : Number(v).toFixed(digits));
+
+async function json(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) throw new Error(url + ' → ' + res.status);
+  return res.json();
+}
+
+function tile(label, value, unit, limit) {
+  const shown = value === null ? '<span class="muted">—</span>' : value + (unit ? `<span class="unit">${unit}</span>` : '');
+  return `<div class="tile">
+            <div class="label">${label}</div>
+            <div class="value">${shown}</div>
+            ${limit ? `<div class="limit">${limit}</div>` : ''}
+          </div>`;
+}
+
+function barChart(hours, gustLimit) {
+  if (!hours.length) return '<p class="muted">No forecast hours stored yet — press “Refresh forecast”.</p>';
+
+  const padL = 34, padR = 12, padT = 14, padB = 26;
+  const barW = 22, gap = 2;
+  const w = padL + padR + hours.length * (barW + gap);
+  const h = 190, plotH = h - padT - padB;
+
+  const maxGust = Math.max(gustLimit * 1.25, ...hours.map(x => x.windGustKmh ?? 0));
+  const yMax = Math.ceil(maxGust / 10) * 10;
+  const y = (v) => padT + plotH - (v / yMax) * plotH;
+
+  let svg = `<svg width="${w}" height="${h}" role="img" aria-label="Forecast wind gusts by hour against the configured gust limit">`;
+
+  for (let t = 0; t <= yMax; t += 20) {
+    svg += `<line x1="${padL}" x2="${w - padR}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)" stroke-width="1"/>`;
+    svg += `<text x="${padL - 7}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
+  }
+
+  hours.forEach((hour, i) => {
+    const gust = hour.windGustKmh;
+    if (gust === null || gust === undefined) return;
+    const x = padL + i * (barW + gap);
+    const top = y(gust), height = Math.max(padT + plotH - top, 2), r = Math.min(4, height);
+    const path = `M${x},${padT + plotH} L${x},${top + r} Q${x},${top} ${x + r},${top} `
+               + `L${x + barW - r},${top} Q${x + barW},${top} ${x + barW},${top + r} L${x + barW},${padT + plotH} Z`;
+    svg += `<path class="bar" d="${path}" fill="${STATUS_COLOR[hour.status]}" data-i="${i}"/>`;
+    if (i % 3 === 0) svg += `<text x="${x + barW / 2}" y="${h - 9}" text-anchor="middle">${fmtHour.format(new Date(hour.forecastTime))}</text>`;
+  });
+
+  svg += `<line x1="${padL}" x2="${w - padR}" y1="${y(gustLimit)}" y2="${y(gustLimit)}"
+            stroke="var(--critical)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  svg += `<text x="${w - padR}" y="${y(gustLimit) - 6}" text-anchor="end" fill="var(--critical)">gust limit ${gustLimit}</text>`;
+  svg += `</svg>`;
+  return svg;
+}
+
+function hoursTable(hours) {
+  const rows = hours.map(h => `<tr>
+      <td>${fmtFull.format(new Date(h.forecastTime))}</td>
+      <td>${num(h.windSpeedKmh) ?? '—'}</td>
+      <td>${num(h.windGustKmh) ?? '—'}</td>
+      <td>${num(h.temperatureC) ?? '—'}</td>
+      <td>${num(h.precipitationMm) ?? '—'}</td>
+      <td>${h.status}</td>
+    </tr>`).join('');
+  return `<details><summary>Show all ${hours.length} hours as a table</summary>
+    <table><thead><tr><th>Hour</th><th>Wind km/h</th><th>Gust km/h</th><th>Temp °C</th><th>Rain mm</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table></details>`;
+}
+
+function render(data) {
+  const c = data.current, limits = data.limits;
+  const window = data.bestWindowStart
+    ? `<div class="window"><strong>${fmtFull.format(new Date(data.bestWindowStart))}</strong>
+         → <strong>${fmtFull.format(new Date(data.bestWindowEnd))}</strong></div>`
+    : `<div class="window muted">No clear window in the stored forecast</div>`;
+
+  el('content').innerHTML = `
+    <div class="card">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div>
+          <h2>Operating status</h2>
+          <span class="badge s-${data.status}"><span class="dot"></span>${data.status}</span>
+          <span class="muted" style="margin-left:10px">worst in the next ${data.hours.length} h</span>
+        </div>
+        <div class="grow">
+          <h2>Best operating window</h2>
+          ${window}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Current conditions ${c ? `· ${fmtFull.format(new Date(c.forecastTime))}` : ''}</h2>
+      <div class="tiles">
+        ${tile('Wind', num(c?.windSpeedKmh), ' km/h', `limit ${limits.maxWindKmh}`)}
+        ${tile('Gusts', num(c?.windGustKmh), ' km/h', `limit ${limits.maxGustKmh}`)}
+        ${tile('Temperature', num(c?.temperatureC), ' °C', `min ${limits.minTemperatureC}`)}
+        ${tile('Precipitation', num(c?.precipitationMm), ' mm', '')}
+        ${tile('Wave height', num(c?.waveHeightM), ' m', `limit ${limits.maxWaveHeightM}`)}
+      </div>
+      ${c && c.reasons.length ? `<div style="margin-top:14px"><h2>Why</h2><ul class="reasons">${c.reasons.map(r => `<li>${r}</li>`).join('')}</ul></div>` : ''}
+    </div>
+
+    <div class="card">
+      <h2>Forecast gusts by hour</h2>
+      <div class="legend">
+        <span><i style="background: var(--good)"></i>Good</span>
+        <span><i style="background: var(--warning)"></i>Caution</span>
+        <span><i style="background: var(--critical)"></i>Unsafe</span>
+      </div>
+      <div class="chart-scroll">${barChart(data.hours, limits.maxGustKmh)}</div>
+      <div style="margin-top:14px">${hoursTable(data.hours)}</div>
+    </div>`;
+
+  const tip = el('tooltip');
+  document.querySelectorAll('.bar').forEach(bar => {
+    bar.addEventListener('mousemove', (event) => {
+      const hour = data.hours[Number(bar.dataset.i)];
+      tip.innerHTML = `<b>${fmtFull.format(new Date(hour.forecastTime))}</b> · ${hour.status}<br>
+        Gust <b>${num(hour.windGustKmh)}</b> km/h · wind <b>${num(hour.windSpeedKmh)}</b> km/h<br>
+        Temp <b>${num(hour.temperatureC)}</b> °C
+        ${hour.reasons.length ? `<br><span class="muted">${hour.reasons[0]}</span>` : ''}`;
+      tip.style.opacity = 1;
+      tip.style.left = Math.min(event.clientX + 14, window.innerWidth - 262) + 'px';
+      tip.style.top = (event.clientY + 16) + 'px';
+    });
+    bar.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+  });
+}
+
+function renderSiteButtons() {
+  el('sites').innerHTML = sites.map(s =>
+    `<button data-id="${s.id}" aria-pressed="${s.id === selectedId}">${s.name}</button>`).join('');
+  document.querySelectorAll('.sites button').forEach(b =>
+    b.addEventListener('click', () => select(Number(b.dataset.id))));
+}
+
+async function select(id) {
+  selectedId = id;
+  renderSiteButtons();
+  el('content').innerHTML = '<div class="card muted">Loading…</div>';
+  try {
+    render(await json(`/api/sites/${id}/conditions`));
+  } catch (e) {
+    el('content').innerHTML = `<div class="card">Could not load conditions: ${e.message}</div>`;
+  }
+}
+
+el('refresh').addEventListener('click', async () => {
+  const button = el('refresh');
+  button.disabled = true;
+  button.textContent = 'Fetching from Open-Meteo…';
+  try {
+    await json(`/api/sites/${selectedId}/ingest`, { method: 'POST' });
+    await select(selectedId);
+  } catch (e) {
+    el('content').innerHTML = `<div class="card">Ingest failed: ${e.message}</div>`;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Refresh forecast';
+  }
+});
+
+(async function start() {
+  try {
+    sites = await json('/api/sites');
+    if (sites.length) await select(sites[0].id);
+  } catch (e) {
+    el('content').innerHTML = `<div class="card">Could not load sites: ${e.message}</div>`;
+  }
+})();
+</script>
+</body>
+</html>
